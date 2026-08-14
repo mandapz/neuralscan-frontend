@@ -1,4 +1,11 @@
-const BASE = process.env.REACT_APP_API_URL || "http://localhost:5001";
+// In production, always use relative paths so requests go through the
+// same-origin Vercel rewrite proxy (see vercel.json) — this is what makes
+// the session cookie first-party instead of cross-site, which browsers
+// like Safari otherwise block. REACT_APP_API_URL is only used for local
+// dev, where there's no Vercel proxy and we talk to the backend directly.
+const BASE = process.env.NODE_ENV === "production"
+  ? ""
+  : (process.env.REACT_APP_API_URL || "http://localhost:5001");
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, { credentials: "include", ...options });
