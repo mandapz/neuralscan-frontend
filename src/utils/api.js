@@ -13,7 +13,15 @@ async function apiFetch(path, options = {}) {
     const body = await res.json().catch(() => ({}));
     throw Object.assign(new Error(body.error || `HTTP ${res.status}`), { status: res.status });
   }
-  return res.json();
+  // DELETE (and some other) endpoints commonly reply 204 No Content or an
+  // empty body — calling res.json() on that throws a SyntaxError, which was
+  // silently aborting the caller (e.g. History.jsx never got to update its
+  // local state after a successful delete, so the UI looked stale until a
+  // manual refresh). Treat "no body" as a success with no payload instead.
+  if (res.status === 204) return null;
+  const text = await res.text();
+  if (!text) return null;
+  return JSON.parse(text);
 }
 
 export async function getMe() { return (await apiFetch("/api/auth/me")).user; }

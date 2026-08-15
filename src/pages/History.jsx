@@ -44,17 +44,29 @@ export default function History() {
 
   useEffect(() => { if (!authLoading) load(); }, [authLoading, load]);
 
+  // Force a re-render every 30s purely so the relative "X menit lalu" labels
+  // stay current without needing a page refresh.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick(n => n + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
+
   const handleDelete = async (id) => {
-    user ? await deleteHistoryEntry(id) : deleteLocalEntry(id);
-    setEntries(p => p.filter(e => e.id !== id));
-    setStats(s => s ? { ...s, total: s.total - 1 } : s);
+    try {
+      user ? await deleteHistoryEntry(id) : deleteLocalEntry(id);
+      setEntries(p => p.filter(e => e.id !== id));
+      setStats(s => s ? { ...s, total: s.total - 1 } : s);
+    } catch (e) { console.error(e); }
   };
 
   const handleClear = async () => {
     if (!confirm) { setConfirm(true); setTimeout(() => setConfirm(false), 3000); return; }
-    user ? await clearHistory() : clearLocalHistory();
-    setEntries([]); setStats(s => s ? { ...s, total: 0, ai_count: 0, real_count: 0 } : s);
-    setConfirm(false);
+    try {
+      user ? await clearHistory() : clearLocalHistory();
+      setEntries([]); setStats(s => s ? { ...s, total: 0, ai_count: 0, real_count: 0 } : s);
+    } catch (e) { console.error(e); }
+    finally { setConfirm(false); }
   };
 
   if (authLoading || loading) {
