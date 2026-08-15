@@ -8,8 +8,21 @@ import {
 import { Trash2, Clock, AlertCircle, CheckCircle2, ScanLine, LogIn } from 'lucide-react';
 import './History.css';
 
+// Server timestamps (scanned_at) commonly come back as an unqualified
+// ISO string like "2026-08-15T10:23:00" — no trailing "Z" or +hh:mm offset.
+// That value IS UTC (e.g. from Python's datetime.utcnow().isoformat()),
+// but browsers parse a date-time string with no timezone designator as
+// LOCAL time. In WIB (UTC+7) that silently shifts every timestamp 7 hours
+// into the future, which is exactly why a scan done seconds ago showed
+// "7 jam lalu". Force it to be read as UTC when no timezone is present.
+function parseServerDate(iso) {
+  if (!iso) return new Date(NaN);
+  const hasTZ = /Z$|[+-]\d{2}:?\d{2}$/.test(iso);
+  return new Date(hasTZ ? iso : iso + 'Z');
+}
+
 function timeAgo(iso) {
-  const d = Date.now() - new Date(iso).getTime();
+  const d = Date.now() - parseServerDate(iso).getTime();
   const m = Math.floor(d/60000), h = Math.floor(m/60), dy = Math.floor(h/24);
   if (dy > 0) return `${dy} hari lalu`;
   if (h > 0)  return `${h} jam lalu`;
